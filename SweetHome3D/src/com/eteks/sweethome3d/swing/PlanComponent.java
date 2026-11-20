@@ -2008,6 +2008,22 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
    * that makes it fill <code>pageFormat</code> imageable size if this attribute is <code>null</code>.
    */
   public int print(Graphics g, PageFormat pageFormat, int pageIndex) {
+    Level originallySelectedLevel = this.home.getSelectedLevel();
+    java.util.List<Level> viewableLevels = new java.util.ArrayList<Level>();
+    for (Level level : this.home.getLevels()) {
+      if (level.isViewable()) {
+        viewableLevels.add(level);
+      }
+    }
+    if (pageIndex < 0 || pageIndex >= viewableLevels.size()) {
+      this.home.setSelectedLevel(originallySelectedLevel);
+      return NO_SUCH_PAGE;
+    }
+    this.home.setSelectedLevel(viewableLevels.get(pageIndex));
+    if (this.home.getPrint() == null
+        || this.home.getPrint().getPlanScale() == null) {
+      pageIndex = 0;
+    }
     List<Selectable> printedItems = getPaintedItems(); 
     Rectangle2D printedItemBounds = getItemsBounds(g, printedItems);
     if (printedItemBounds != null) {
@@ -2024,6 +2040,7 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
         // Compute a scale that ensures the plan will fill the component if plan scale is null
         printScale = getPrintPreferredScale(g, pageFormat) * LengthUnit.centimeterToInch(72);
         if (pageIndex > 0) {
+          this.home.setSelectedLevel(originallySelectedLevel);
           return NO_SUCH_PAGE;
         }
         pagesPerRow = 1;
@@ -2042,6 +2059,7 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
           pagesPerColumn++;
         }
         if (pageIndex >= pagesPerRow * pagesPerColumn) {
+          this.home.setSelectedLevel(originallySelectedLevel);
           return NO_SUCH_PAGE;
         }
         rowIndex = pageIndex / pagesPerRow;
@@ -2069,8 +2087,10 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
         // Ignore exception because it may happen only in EXPORT paint mode 
       }   
       g2D.dispose();
+      this.home.setSelectedLevel(originallySelectedLevel);
       return PAGE_EXISTS;
     } else {
+      this.home.setSelectedLevel(originallySelectedLevel);
       return NO_SUCH_PAGE;
     }
   }

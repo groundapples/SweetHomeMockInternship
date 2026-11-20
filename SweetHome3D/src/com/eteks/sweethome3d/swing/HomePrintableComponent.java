@@ -347,18 +347,28 @@ public class HomePrintableComponent extends JComponent implements Printable {
         && (homePrint == null || homePrint.isFurniturePrinted())) {
       FurnitureTable furnitureTable = null;
       final FurnitureTable.FurnitureFilter furnitureFilter;
+      java.util.List<HomePieceOfFurniture.SortableProperty> visibleFurnitureProperties = null;
       if (furnitureView instanceof FurnitureTable
           && (homePrint == null
               || homePrint.isPlanPrinted()
               || homePrint.isView3DPrinted())) {
-        final Level selectedLevel = home.getSelectedLevel();
         furnitureTable = (FurnitureTable)furnitureView;
         furnitureFilter = furnitureTable.getFurnitureFilter();
+        java.util.List<HomePieceOfFurniture.SortableProperty> printableVisibleProperties =
+            new java.util.ArrayList<HomePieceOfFurniture.SortableProperty>(
+                home.getFurnitureVisibleProperties());
+        if (!printableVisibleProperties.contains(HomePieceOfFurniture.SortableProperty.LEVEL)) {
+          visibleFurnitureProperties = new java.util.ArrayList<HomePieceOfFurniture.SortableProperty>(
+              printableVisibleProperties);
+          printableVisibleProperties.add(HomePieceOfFurniture.SortableProperty.LEVEL);
+          home.setFurnitureVisibleProperties(printableVisibleProperties);
+        } else {
+          visibleFurnitureProperties = null;
+        }
         furnitureTable.setFurnitureFilter(new FurnitureTable.FurnitureFilter() {
             public boolean include(Home home, HomePieceOfFurniture piece) {
-              // Print only furniture at selected level when the plan or the 3D view is printed
+              // Print furniture from every viewable level when the plan or 3D view is printed
               return (furnitureFilter == null || furnitureFilter.include(home, piece))
-                  && piece.isAtLevel(selectedLevel)
                   && (piece.getLevel() == null || piece.getLevel().isViewable());
             }
           });
@@ -370,6 +380,11 @@ public class HomePrintableComponent extends JComponent implements Printable {
       if (furnitureTable != null) {
         // Restore previous filter
         ((FurnitureTable)furnitureView).setFurnitureFilter(furnitureFilter);
+        if (visibleFurnitureProperties != null) {
+          home.setFurnitureVisibleProperties(
+              new java.util.ArrayList<HomePieceOfFurniture.SortableProperty>(
+                  visibleFurnitureProperties));
+        }
       }
       if (pageExists == PAGE_EXISTS
           && !this.printablePages.contains(page)) {
